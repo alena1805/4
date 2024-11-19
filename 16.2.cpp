@@ -1,119 +1,114 @@
 #include <iostream>
 #include <algorithm>
 
-class LineSegment {
+class Segment {
 private:
-    double x1; // левая граница отрезка
-    double x2; // правая граница отрезка
+    double left;  // левая граница отрезка
+    double right; // правая граница отрезка
 
 public:
-    // Конструкторы остаются без изменений
-    LineSegment() : x1(0), x2(0) {}
-    
-    LineSegment(double start, double end) {
-        setCoordinates(start, end);
-    }
-    
-    LineSegment(const LineSegment& other) : x1(other.x1), x2(other.x2) {}
+    // Конструкторы
+    Segment() : left(0), right(0) {}
 
-    // Существующие методы остаются без изменений
-    void setCoordinates(double start, double end) {
-        x1 = std::min(start, end);
-        x2 = std::max(start, end);
+    Segment(double start, double end) {
+        setBounds(start, end);
     }
 
-    double getStart() const { return x1; }
-    double getEnd() const { return x2; }
+    Segment(const Segment& other) : left(other.left), right(other.right) {}
+
+    // Установка границ отрезка
+    void setBounds(double start, double end) {
+        left = std::min(start, end);
+        right = std::max(start, end);
+    }
+
+    double getLeft() const { return left; }
+    double getRight() const { return right; }
 
     // Перегрузка унарного оператора !
-    // Устанавливает меньшую координату в 0
-    LineSegment operator!() const {
-        return LineSegment(0, x2);
+    Segment operator!() const {
+        return Segment(0, right);
     }
 
     // Неявное преобразование в int
-    // Возвращает целую часть правой координаты
     operator int() const {
-        return static_cast<int>(x2);
+        return static_cast<int>(right);
     }
 
     // Явное преобразование в double
-    // Возвращает левую координату
     explicit operator double() const {
-        return x1;
+        return left;
     }
 
     // Перегрузка бинарного оператора +
-    // Увеличивает обе координаты на заданное число
-    LineSegment operator+(int value) const {
-        return LineSegment(x1 + value, x2 + value);
+    Segment operator+(int value) const {
+        return Segment(left + value, right + value);
     }
 
     // Перегрузка оператора >
-    // Проверяет, включает ли текущий отрезок другой отрезок
-    bool operator>(const LineSegment& other) const {
-        return x1 <= other.x1 && x2 >= other.x2;
+    bool operator>(const Segment& other) const {
+        return left <= other.left && right >= other.right;
     }
 
-    // Существующий дружественный оператор вывода
-    friend std::ostream& operator<<(std::ostream& os, const LineSegment& seg) {
-        os << "[" << seg.x1 << ", " << seg.x2 << "]";
+    // Дружественный оператор вывода
+    friend std::ostream& operator<<(std::ostream& os, const Segment& seg) {
+        os << "[" << seg.left << ", " << seg.right << "]";
         return os;
     }
 
-    // Статический метод intersection остается без изменений
-    static LineSegment* intersection(const LineSegment& seg1, const LineSegment& seg2) {
-        if (seg1.x2 < seg2.x1 || seg2.x2 < seg1.x1) {
+    // Статический метод для нахождения пересечения
+    static Segment* findIntersection(const Segment& seg1, const Segment& seg2) {
+        if (seg1.right < seg2.left || seg2.right < seg1.left) {
             return nullptr;
         }
-        double start = std::max(seg1.x1, seg2.x1);
-        double end = std::min(seg1.x2, seg2.x2);
-        return new LineSegment(start, end);
+        double newLeft = std::max(seg1.left, seg2.left);
+        double newRight = std::min(seg1.right, seg2.right);
+        return new Segment(newLeft, newRight);
     }
 };
 
 int main() {
-    // Создаем тестовые отрезки
-    LineSegment seg1(2.5, 7.8);
-    LineSegment seg2(4.0, 6.0);
-    LineSegment seg3(1.0, 10.0);
+    // Создание тестовых отрезков
+    Segment s1(2.5, 7.8);
+    Segment s2(4.0, 6.0);
+    Segment s3(1.0, 10.0);
 
     std::cout << "Исходные отрезки:\n";
-    std::cout << "seg1: " << seg1 << std::endl;
-    std::cout << "seg2: " << seg2 << std::endl;
-    std::cout << "seg3: " << seg3 << std::endl;
+    std::cout << "s1: " << s1 << std::endl;
+    std::cout << "s2: " << s2 << std::endl;
+    std::cout << "s3: " << s3 << std::endl;
 
     // Демонстрация унарного оператора !
-    std::cout << "\nПрименение оператора ! к seg1:\n";
-    LineSegment negSeg = !seg1;
-    std::cout << "!seg1: " << negSeg << std::endl;
+    std::cout << "\nПрименение оператора ! к s1:\n";
+    Segment negSegment = !s1;
+    std::cout << "!s1: " << negSegment << std::endl;
 
     // Демонстрация преобразования типов
-    int intValue = seg1;  // неявное преобразование в int
-    double doubleValue = static_cast<double>(seg1);  // явное преобразование в double
-    std::cout << "\nПреобразования типов для seg1:\n";
+    int intValue = s1;  // неявное преобразование в int
+    double doubleValue = static_cast<double>(s1);  // явное преобразование в double
+    std::cout << "\nПреобразования типов для s1:\n";
     std::cout << "В int: " << intValue << std::endl;
     std::cout << "В double: " << doubleValue << std::endl;
 
     // Демонстрация оператора +
-    std::cout << "\nПрименение оператора + к seg1:\n";
-    LineSegment shiftedSeg = seg1 + 3;
-    std::cout << "seg1 + 3: " << shiftedSeg << std::endl;
+    std::cout << "\nПрименение оператора + к s1:\n";
+    Segment shiftedSegment = s1 + 3;
+    std::cout << "s1 + 3: " << shiftedSegment << std::endl;
 
     // Демонстрация оператора >
     std::cout << "\nСравнение отрезков с помощью оператора >:\n";
-    std::cout << "seg3 > seg1: " << (seg3 > seg1 ? "true" : "false") << std::endl;
-    std::cout << "seg1 > seg2: " << (seg1 > seg2 ? "true" : "false") << std::endl;
-    std::cout << "seg2 > seg3: " << (seg2 > seg3 ? "true" : "false") << std::endl;
+    std::cout << "s3 > s1: " << (s3 > s1 ? "true" : "false") << std::endl;
+    std::cout << "s1 > s2: " << (s1 > s2 ? "true" : "false") << std::endl;
+    std::cout << "s2 > s3: " << (s2 > s3 ? "true" : "false") << std::endl;
 
-    // Демонстрация метода intersection
+    // Демонстрация метода findIntersection
     std::cout << "\nПересечение отрезков:\n";
-    LineSegment* intersection = LineSegment::intersection(seg1, seg2);
+    Segment* intersection = Segment::findIntersection(s1, s2);
     if (intersection) {
-        std::cout << "Пересечение seg1 и seg2: " << *intersection << std::endl;
+        std::cout << "Пересечение s1 и s2: " << *intersection << std::endl;
         delete intersection;
     } else {
-        std::cout << "Отрезки seg1 и seg2 не пересекаются" << std::endl;
+        std::cout << "Отрезки s1 и s2 не пересекаются" << std::endl;
     }
 
     return 0;
