@@ -1,115 +1,165 @@
 #include <iostream>
+#include <limits>
+#include <stdexcept>
 #include <algorithm>
 
-class Segment {
+// Класс, представляющий отрезок на координатной прямой
+class LineSegment {
 private:
-    double left;  // левая граница отрезка
-    double right; // правая граница отрезка
+    double x1; // Начало отрезка
+    double x2; // Конец отрезка
 
 public:
-    // Конструкторы
-    Segment() : left(0), right(0) {}
-
-    Segment(double start, double end) {
-        setBounds(start, end);
+    // Конструктор с двумя параметрами (начало и конец отрезка)
+    LineSegment(double start, double end) {
+        if (start > end) {
+            throw std::invalid_argument("Начало отрезка не может быть больше конца.");
+        }
+        x1 = start; // Присваиваем начальную точку
+        x2 = end;   // Присваиваем конечную точку
     }
 
-    Segment(const Segment& other) : left(other.left), right(other.right) {}
+    // Конструктор, представляющий отрезок, состоящий из одной точки
+    LineSegment(double point) : x1(point), x2(point) {}
 
-    // Установка границ отрезка
-    void setBounds(double start, double end) {
-        left = std::min(start, end);
-        right = std::max(start, end);
+    // Копирующий конструктор
+    LineSegment(const LineSegment& segment) : x1(segment.x1), x2(segment.x2) {}
+
+    // Свойства для начала и конца отрезка
+    double Start() const { return x1; }
+    double End() const { return x2; }
+
+    // Метод для нахождения пересечения между двумя отрезками
+    LineSegment* Intersect(const LineSegment& other) const {
+        double maxStart = std::max(this->Start(), other.Start()); // Максимальное начало
+        double minEnd = std::min(this->End(), other.End());       // Минимальный конец
+
+        // Проверка на наличие пересечения
+        if (maxStart <= minEnd) {
+            return new LineSegment(maxStart, minEnd); // Возвращаем новый отрезок пересечения
+        }
+        return nullptr; // Нет пересечения
     }
 
-    double getLeft() const { return left; }
-    double getRight() const { return right; }
-
-    // Перегрузка унарного оператора !
-    Segment operator!() const {
-        return Segment(0, right);
-    }
-
-    // Неявное преобразование в int
-    operator int() const {
-        return static_cast<int>(right);
-    }
-
-    // Явное преобразование в double
-    explicit operator double() const {
-        return left;
-    }
-
-    // Перегрузка бинарного оператора +
-    Segment operator+(int value) const {
-        return Segment(left + value, right + value);
-    }
-
-    // Перегрузка оператора >
-    bool operator>(const Segment& other) const {
-        return left <= other.left && right >= other.right;
-    }
-
-    // Дружественный оператор вывода
-    friend std::ostream& operator<<(std::ostream& os, const Segment& seg) {
-        os << "[" << seg.left << ", " << seg.right << "]";
+    // Перегрузка оператора вывода для отображения отрезка
+    friend std::ostream& operator<<(std::ostream& os, const LineSegment& segment) {
+        os << "Отрезок от " << segment.x1 << " до " << segment.x2;
         return os;
     }
+    // Унарная операция: установить соответствующую координату в 0
+    LineSegment operator!() {
+        return LineSegment(0, std::max(x1, x2)); // Устанавливаем начало в 0
+    }
 
-    // Статический метод для нахождения пересечения
-    static Segment* findIntersection(const Segment& seg1, const Segment& seg2) {
-        if (seg1.right < seg2.left || seg2.right < seg1.left) {
-            return nullptr;
+    // Приведение типа для int (неявное) – целая часть координаты y
+    operator int() const {
+        return static_cast<int>(x1);
+    }
+
+    // Приведение типа для double (явное) – результатом является координата x
+    explicit operator double() const {
+        return x1;
+    }
+
+    // Бинарная операция: сложение с целым числом
+    LineSegment operator+(int offset) {
+        return LineSegment(x1 + offset, x2 + offset); // Увеличиваем координаты
+    }
+
+    // Бинарная операция: оператор сравнения
+    bool operator>(const LineSegment& other) const {
+        return (x1 <= other.x1 && x2 >= other.x2); // Проверяем, включает ли левый отрезок правый
+    }
+
+    // Метод для нахождения пересечения между двумя отрезками
+    LineSegment* Intersect(const LineSegment& other) {
+        double newStart = std::max(x1, other.x1);// Находим максимальное значение начала обоих отрезков
+        double newEnd = std::min(x2, other.x2);// Находим минимальное значение конца обоих отрезков
+        if (newStart <= newEnd) {// Проверяем, пересекаются ли отрезки
+            return new LineSegment(newStart, newEnd);// Если пересечение существует, создаем и возвращаем новый отрезок
         }
-        double newLeft = std::max(seg1.left, seg2.left);
-        double newRight = std::min(seg1.right, seg2.right);
-        return new Segment(newLeft, newRight);
+        return nullptr; // Нет пересечения
+    }
+
+    // Метод для отображения отрезка
+    void Display() const {
+        std::cout << "Отрезок от " << x1 << " до " << x2 << " " << std::endl;
     }
 };
 
-int main() {
-    // Создание тестовых отрезков
-    Segment s1(2.5, 7.8);
-    Segment s2(4.0, 6.0);
-    Segment s3(1.0, 10.0);
+// Функция для безопасного ввода числа от пользователя
+double A(const std::string& prompt) {
+    double value;
+    
+    while (true) {
+        std::cout << prompt;
+        std::cin >> value;
 
-    std::cout << "Исходные отрезки:\n";
-    std::cout << "s1: " << s1 << std::endl;
-    std::cout << "s2: " << s2 << std::endl;
-    std::cout << "s3: " << s3 << std::endl;
-
-    // Демонстрация унарного оператора !
-    std::cout << "\nПрименение оператора ! к s1:\n";
-    Segment negSegment = !s1;
-    std::cout << "!s1: " << negSegment << std::endl;
-
-    // Демонстрация преобразования типов
-    int intValue = s1;  // неявное преобразование в int
-    double doubleValue = static_cast<double>(s1);  // явное преобразование в double
-    std::cout << "\nПреобразования типов для s1:\n";
-    std::cout << "В int: " << intValue << std::endl;
-    std::cout << "В double: " << doubleValue << std::endl;
-
-    // Демонстрация оператора +
-    std::cout << "\nПрименение оператора + к s1:\n";
-    Segment shiftedSegment = s1 + 3;
-    std::cout << "s1 + 3: " << shiftedSegment << std::endl;
-
-    // Демонстрация оператора >
-    std::cout << "\nСравнение отрезков с помощью оператора >:\n";
-    std::cout << "s3 > s1: " << (s3 > s1 ? "true" : "false") << std::endl;
-    std::cout << "s1 > s2: " << (s1 > s2 ? "true" : "false") << std::endl;
-    std::cout << "s2 > s3: " << (s2 > s3 ? "true" : "false") << std::endl;
-
-    // Демонстрация метода findIntersection
-    std::cout << "\nПересечение отрезков:\n";
-    Segment* intersection = Segment::findIntersection(s1, s2);
-    if (intersection) {
-        std::cout << "Пересечение s1 и s2: " << *intersection << std::endl;
-        delete intersection;
-    } else {
-        std::cout << "Отрезки s1 и s2 не пересекаются" << std::endl;
+        // Проверяем, было ли введено значение корректно
+        if (std::cin.fail()) {
+            std::cin.clear(); // Сбрасываем флаг ошибки
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // Удаляем некорректный ввод
+            std::cout << "Ошибка: введите число." << std::endl;
+        } else {
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // Очищаем буфер
+            return value; // Возвращаем корректное значение
+        }
     }
+}
 
+int main() {
+    try {
+        // Получаем ввод от пользователя
+        double start = A("Введите начало отрезка: ");
+        double end = A("Введите конец отрезка: ");
+
+        // Создаём отрезок
+        LineSegment segment1(start, end);
+        std::cout << segment1 << std::endl;
+
+        // Создаём отрезок 2
+        LineSegment segment2(start, end);
+        std::cout << segment2 << std::endl;
+        
+        // Пример пересечения с другим сегментом отрезка
+        double otherStart = A("Введите начало другого отрезка: ");
+        double otherEnd = A("Введите конец другого отрезка: ");
+        LineSegment otherSegment(otherStart, otherEnd);
+        
+        // Нахождение пересечения
+        LineSegment* intersection = segment1.Intersect(otherSegment); // Находим пересечение
+        if (intersection) {// Если пересечение существует, выводим его на экран
+            std::cout << "Пересечение: " << *intersection << std::endl;
+            delete intersection; // Освобождаем память
+        } else {// Если пересечения нет, сообщаем об этом 
+            std::cout << "Отрезки не пересекаются." << std::endl;
+        }
+        // Применение унарной операции
+        LineSegment updatedSegment = !segment1;// Применяем унарную операцию к segment1 и сохраняем результат в updatedSegment
+        std::cout << "После унарной операции: ";// Выводим обновленный отрезок на экран
+        updatedSegment.Display();
+
+        // Приведение типов
+        int intValue = segment1; // Неявное приведение
+        std::cout << "Неявное приведение к int: " << intValue << std::endl;
+
+        double doubleValue = static_cast<double>(segment1); // Явное приведение
+        std::cout << "Явное приведение к double: " << doubleValue << std::endl;
+
+        // Сложение с целым числом
+        LineSegment newSegment = segment1 + 2;
+        std::cout << "После сложения с 2: ";
+        newSegment.Display();
+
+        // Проверка операторов сравнения
+        if (segment1 > segment2) {
+            std::cout << "Первый отрезок включает второй." << std::endl;
+        } else {
+            std::cout << "Первый отрезок не включает второй." << std::endl;
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "Ошибка: " << e.what() << std::endl;
+    }
+    
     return 0;
 }
