@@ -1,99 +1,100 @@
 #include <iostream>
+#include <limits>
+#include <stdexcept>
 #include <algorithm>
 
-// Класс для представления отрезка
-class Line {
+// Класс, представляющий отрезок на координатной прямой
+class LineSegment {
 private:
-    double begin, finish; // Начало и конец отрезка
+    double x1; // Начало отрезка
+    double x2; // Конец отрезка
 
 public:
-    // Конструктор по умолчанию
-    Line() : begin(0), finish(0) {}
-
-    // Конструктор с параметрами
-    Line(double b, double f) {
-        setPoints(b, f);
-    }
-
-    // Конструктор копирования
-    Line(const Line& other) : begin(other.begin), finish(other.finish) {}
-
-    // Метод для установки координат отрезка
-    void setPoints(double b, double f) {
-        begin = std::min(b, f);
-        finish = std::max(b, f);
-    }
-
-    // Получаем начало и конец отрезка
-    double getBegin() const { return begin; }
-    double getFinish() const { return finish; }
-
-    // Статический метод для нахождения пересечения двух отрезков
-    static Line* findOverlap(const Line& line1, const Line& line2) {
-        // Если один отрезок заканчивается до начала другого, они не пересекаются
-        if (line1.finish < line2.begin || line2.finish < line1.begin) {
-            return nullptr; // Нет пересечения
+    // Конструктор с двумя параметрами (начало и конец отрезка)
+    LineSegment(double start, double end) {
+        if (start > end) {
+            throw std::invalid_argument("Начало отрезка не может быть больше конца.");
         }
-
-        // Находим координаты пересечения
-        double overlapBegin = std::max(line1.begin, line2.begin);
-        double overlapFinish = std::min(line1.finish, line2.finish);
-
-        // Возвращаем новый отрезок, представляющий пересечение
-        return new Line(overlapBegin, overlapFinish);
+        x1 = start; // Присваиваем начальную точку
+        x2 = end;   // Присваиваем конечную точку
     }
 
-    // Перегрузка оператора вывода
-    friend std::ostream& operator<<(std::ostream& os, const Line& line) {
-        os << "[" << line.begin << ", " << line.finish << "]";
+    // Конструктор, представляющий отрезок, состоящий из одной точки
+    LineSegment(double point) : x1(point), x2(point) {}
+
+    // Копирующий конструктор
+    LineSegment(const LineSegment& segment) : x1(segment.x1), x2(segment.x2) {}
+
+    // Свойства для начала и конца отрезка
+    double Start() const { return x1; }
+    double End() const { return x2; }
+
+    // Метод для нахождения пересечения между двумя отрезками
+    LineSegment* Intersect(const LineSegment& other) const {
+        double maxStart = std::max(this->Start(), other.Start()); // Максимальное начало
+        double minEnd = std::min(this->End(), other.End());       // Минимальный конец
+
+        // Проверка на наличие пересечения
+        if (maxStart <= minEnd) {
+            return new LineSegment(maxStart, minEnd); // Возвращаем новый отрезок пересечения
+        }
+        return nullptr; // Нет пересечения
+    }
+
+    // Перегрузка оператора вывода для отображения отрезка
+    friend std::ostream& operator<<(std::ostream& os, const LineSegment& segment) {
+        os << "Отрезок от " << segment.x1 << " до " << segment.x2;
         return os;
     }
 };
 
-// Функция для проверки корректного ввода от пользователя
-double getInput() {
+// Функция для безопасного ввода числа от пользователя
+double getUserInput(const std::string& prompt) {
     double value;
-    while (!(std::cin >> value)) {
-        std::cin.clear(); // Сбрасываем флаги ошибок
-        std::cin.ignore(10000, '\n'); // Очищаем буфер ввода
-        std::cout << "Ошибка ввода. Пожалуйста, введите число: ";
+    
+    while (true) {
+        std::cout << prompt;
+        std::cin >> value;
+
+        // Проверяем, было ли введено значение корректно
+        if (std::cin.fail()) {
+            std::cin.clear(); // Сбрасываем флаг ошибки
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // Удаляем некорректный ввод
+            std::cout << "Ошибка: введите число." << std::endl;
+        } else {
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // Очищаем буфер
+            return value; // Возвращаем корректное значение
+        }
     }
-    return value;
 }
 
 int main() {
-    // Создание первого отрезка и ввод его координат
-    std::cout << "Давайте создадим первый отрезок:\n";
-    std::cout << "Введите координату начала: ";
-    double start1 = getInput();
-    std::cout << "Введите координату конца: ";
-    double end1 = getInput();
-    Line line1(start1, end1);
+    try {
+        // Получаем ввод от пользователя
+        double start = getUserInput("Введите начало отрезка: ");
+        double end = getUserInput("Введите конец отрезка: ");
 
-    // Создание второго отрезка и ввод его координат
-    std::cout << "Теперь создадим второй отрезок:\n";
-    std::cout << "Введите координату начала: ";
-    double start2 = getInput();
-    std::cout << "Введите координату конца: ";
-    double end2 = getInput();
-    Line line2(start2, end2);
+        // Создаём отрезок
+        LineSegment segment(start, end);
+        std::cout << segment << std::endl;
 
-    // Вывод информации о созданных отрезках
-    std::cout << "\nПервый отрезок: " << line1 << std::endl;
-    std::cout << "Второй отрезок: " << line2 << std::endl;
+        // Пример пересечения с другим сегментом отрезка
+        double otherStart = getUserInput("Введите начало другого отрезка: ");
+        double otherEnd = getUserInput("Введите конец другого отрезка: ");
+        LineSegment otherSegment(otherStart, otherEnd);
+        
+        // Нахождение пересечения
+        LineSegment* intersection = segment.Intersect(otherSegment);
+        if (intersection) {
+            std::cout << "Пересечение: " << *intersection << std::endl;
+            delete intersection; // Освобождаем память
+        } else {
+            std::cout << "Отрезки не пересекаются." << std::endl;
+        }
 
-    // Проверяем, пересекаются ли отрезки
-    Line* overlap = Line::findOverlap(line1, line2);
-    if (overlap) {
-        std::cout << "Отрезки пересекаются. Вот отрезок пересечения: " << *overlap << std::endl;
-        delete overlap; // Освобождаем память после использования
-    } else {
-        std::cout << "К сожалению, отрезки не пересекаются." << std::endl;
+    } catch (const std::exception& e) {
+        std::cerr << "Ошибка: " << e.what() << std::endl;
     }
-
-    // Демонстрация работы конструктора копирования
-    Line line3(line1);
-    std::cout << "\nВот копия первого отрезка: " << line3 << std::endl;
 
     return 0;
 }
